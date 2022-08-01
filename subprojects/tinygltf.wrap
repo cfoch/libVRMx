@@ -1,0 +1,5 @@
+[wrap-git]
+directory = tinygltf
+url = https://github.com/syoyo/tinygltf
+revision = master
+patch_directory=tinygltf
