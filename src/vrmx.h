@@ -5,6 +5,8 @@
 #include <string>
 #include "tiny_gltf.h"
 #include "vrmx-types.h"
+#include "spdlog/spdlog.h"
+#include "spdlog/cfg/env.h"
 
 namespace vrmx
 {

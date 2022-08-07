@@ -77,7 +77,7 @@ VRMContext::LoadBinaryFromFile (std::string filePath)
   ret = loader.LoadBinaryFromFile (model.get (), &err, &warn, filePath);
 
   if (!warn.empty ())
-    std::cerr << warn << std::endl;
+    spdlog::warn (warn);
 
   if (!err.empty () || !ret)
     throw err;

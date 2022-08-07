@@ -7,6 +7,8 @@ tinygltf_subproject = subproject('tinygltf')
 tinygltf_inc = tinygltf_subproject.get_variable('tinygltf_inc')
 magic_enum_subproject = subproject('magic_enum')
 magic_enum_inc = magic_enum_subproject.get_variable('magic_enum_include')
+spdlog = subproject('spdlog')
+spdlog_dep = spdlog.get_variable('spdlog_dep')
 
 gl_dep = dependency('gl', required: true)
 glfw_dep = dependency('glfw3', required: true)
