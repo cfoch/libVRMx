@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include "vrmx.h"
+#include "vrmx-io.h"
 
 int
 main (int argc, char **argv)
@@ -13,6 +14,7 @@ main (int argc, char **argv)
   std::string path = std::string (argv[1]);
   try {
     vrmx::VRMContext ctx = vrmx::VRMContext::LoadBinaryFromFile (path);
+    std::cout << ctx.vrm.meta;
   } catch (const std::string ex) {
     std::cout << ex << std::endl;
   }
