@@ -1,0 +1,4 @@
+[wrap-git]
+directory = magic_enum
+url = https://github.com/Neargye/magic_enum
+revision = master
