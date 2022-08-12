@@ -39,7 +39,11 @@ SetFromObjVal (const tinygltf::Value &val, std::string key, T &out)
 void
 VRM::Deserialize (const tinygltf::Value &val)
 {
-  auto value = val.Get ("meta");
+  tinygltf::Value value;
+
+  if (!val.Has ("meta"))
+    throw;
+  value = val.Get ("meta");
   meta.Deserialize (value);
 }
 
