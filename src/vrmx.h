@@ -19,6 +19,7 @@ class VRMContext
 
     VRMContext(std::unique_ptr<tinygltf::Model> &model);
     static VRMContext LoadBinaryFromFile (std::string filePath);
+    void ToJSONFile (const std::string &path);
 };
 }
 

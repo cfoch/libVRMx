@@ -115,4 +115,12 @@ VRMContext::LoadBinaryFromFile (std::string filePath)
 
   return VRMContext (model);
 }
+
+void
+VRMContext::ToJSONFile (const std::string &path)
+{
+  tinygltf::TinyGLTF tinygltf;
+
+  tinygltf.WriteGltfSceneToFile (model.get (), path, false, false, true, false);
+}
 }
