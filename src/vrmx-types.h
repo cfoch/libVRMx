@@ -141,6 +141,7 @@ typedef struct : public ISerializable
 struct VRM : public ISerializable
 {
   VRMMeta meta;
+  VRMHumanoid humanoid;
 
   void Deserialize (const tinygltf::Value &val);
 };

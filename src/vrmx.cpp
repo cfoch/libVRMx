@@ -49,7 +49,7 @@ VRM::Deserialize (const tinygltf::Value &val)
   if (!val.Has ("humanoid"))
     throw;
   value = val.Get ("humanoid");
-  meta.Deserialize (value);
+  humanoid.Deserialize (value);
 }
 
 void
