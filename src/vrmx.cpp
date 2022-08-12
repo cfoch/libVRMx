@@ -45,6 +45,11 @@ VRM::Deserialize (const tinygltf::Value &val)
     throw;
   value = val.Get ("meta");
   meta.Deserialize (value);
+
+  if (!val.Has ("humanoid"))
+    throw;
+  value = val.Get ("humanoid");
+  meta.Deserialize (value);
 }
 
 void
@@ -62,6 +67,28 @@ VRMMeta::Deserialize (const tinygltf::Value &val)
   SetFromObjVal (val, "otherPermissionUrl", otherPermissionUrl);
   SetFromObjVal (val, "licenseName", licenseName);
   SetFromObjVal (val, "otherLicenseUrl", otherLicenseUrl);
+}
+
+void
+VRMHumanoid::Deserialize (const tinygltf::Value &val)
+{
+  if (!val.Has ("humanBones"))
+    throw;
+
+  tinygltf::Value humanBonesVal = val.Get ("humanBones");
+  if (!humanBonesVal.IsArray ())
+    throw UnexpectedType ();
+
+  humanBones.reserve (humanBonesVal.Size ());
+  for (size_t i; i < humanBones.size (); i++)
+    humanBones[i].Deserialize (humanBonesVal.Get (i));
+}
+
+void
+VRMHumanoidBone::Deserialize (const tinygltf::Value &val)
+{
+  SetFromObjVal (val, "bone", bone);
+  SetFromObjVal (val, "node", node);
 }
 
 VRMContext::VRMContext(std::unique_ptr<tinygltf::Model> &model)

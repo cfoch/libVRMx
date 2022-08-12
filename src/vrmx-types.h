@@ -49,6 +49,95 @@ typedef struct : public ISerializable
   void Deserialize (const tinygltf::Value & val);
 } VRMMeta;
 
+typedef struct : public ISerializable
+{
+  enum class VRMHumanoidBoneType
+  {
+    hips,
+    leftUpperLeg,
+    rightUpperLeg,
+    leftLowerLeg,
+    rightLowerLeg,
+    leftFoot,
+    rightFoot,
+    spine,
+    chest,
+    neck,
+    head,
+    leftShoulder,
+    rightShoulder,
+    leftUpperArm,
+    rightUpperArm,
+    leftLowerArm,
+    rightLowerArm,
+    leftHand,
+    rightHand,
+    leftToes,
+    rightToes,
+    leftEye,
+    rightEye,
+    jaw,
+    leftThumbProximal,
+    leftThumbIntermediate,
+    leftThumbDistal,
+    leftIndexProximal,
+    leftIndexIntermediate,
+    leftIndexDistal,
+    leftMiddleProximal,
+    leftMiddleIntermediate,
+    leftMiddleDistal,
+    leftRingProximal,
+    leftRingIntermediate,
+    leftRingDistal,
+    leftLittleProximal,
+    leftLittleIntermediate,
+    leftLittleDistal,
+    rightThumbProximal,
+    rightThumbIntermediate,
+    rightThumbDistal,
+    rightIndexProximal,
+    rightIndexIntermediate,
+    rightIndexDistal,
+    rightMiddleProximal,
+    rightMiddleIntermediate,
+    rightMiddleDistal,
+    rightRingProximal,
+    rightRingIntermediate,
+    rightRingDistal,
+    rightLittleProximal,
+    rightLittleIntermediate,
+    rightLittleDistal,
+    upperChest,
+  };
+
+  VRMHumanoidBoneType bone;
+  int node;
+  // NOTE: The following fields seems to be for Unity.
+  // bool useDefaultValues;
+  // double min[3];
+  // double max[3];
+  // double center[3];
+  // double axisLength;
+
+  void Deserialize (const tinygltf::Value & val);
+} VRMHumanoidBone;
+
+typedef struct : public ISerializable
+{
+  std::vector<VRMHumanoidBone> humanBones;
+  // NOTE: The following fields seems to be for Unity.
+  // double armStretch;
+  // double legStretch;
+  // double upperArmTwist;
+  // double lowerArmTwist;
+  // double upperLegTwist;
+  // double lowerLegTwist;
+  // double feetSpacing;
+  // bool hasTranslationDoF;
+
+  void Deserialize (const tinygltf::Value & val);
+} VRMHumanoid;
+
 struct VRM : public ISerializable
 {
   VRMMeta meta;
