@@ -14,4 +14,5 @@ gl_dep = dependency('gl', required: true)
 glfw_dep = dependency('glfw3', required: true)
 
 subdir('src')
+subdir('bin')
 subdir('examples')
