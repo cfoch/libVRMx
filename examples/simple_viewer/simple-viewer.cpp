@@ -2,7 +2,8 @@
 #include <string>
 #include <gtk/gtk.h>
 // #include <GL/gl.h>
-#include <GL/glew.h>
+#include <epoxy/gl.h>
+#include <epoxy/glx.h>
 
 #include "vrmx.h"
 #include "vrmx-io.h"
@@ -112,17 +113,12 @@ render_cb (GtkGLArea *area, GdkGLContext *context, gpointer user_data)
 }
 
 static void
-create_context_cb (GtkWidget *gl_area, gpointer user_data)
+realize_cb (GtkWidget *gl_area, gpointer user_data)
 {
   SimpleViewerContext *ctx = (SimpleViewerContext *) user_data;
-  std::cout << "create-context" << std::endl;
 
   gtk_gl_area_make_current (GTK_GL_AREA (gl_area));
   if (gtk_gl_area_get_error (GTK_GL_AREA (gl_area)) != NULL)
-    abort ();
-
-  glewExperimental = true;
-  if (glewInit() != GLEW_OK)
     abort ();
 
   init_shaders (ctx);
@@ -141,8 +137,7 @@ activate_cb (GtkApplication * app, gpointer user_data)
 
   gl_area = gtk_gl_area_new ();
   g_signal_connect (gl_area, "render", G_CALLBACK (render_cb), NULL);
-  g_signal_connect_after (gl_area, "create-context",
-      G_CALLBACK (create_context_cb), ctx);
+  g_signal_connect (gl_area, "realize", G_CALLBACK (realize_cb), ctx);
 
   gtk_window_set_child (GTK_WINDOW (window), gl_area);
 
