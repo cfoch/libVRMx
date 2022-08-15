@@ -1,3 +1,4 @@
+#include <optional>
 #include <iostream>
 #include <string>
 #include <gtk/gtk.h>
@@ -15,6 +16,7 @@
 #define VERTEX_SHADER       PROG_DIR "/shaders/shader.vert"
 
 typedef struct {
+  std::optional<vrmx::VRMContext> vrmCtx;
   std::string filePath;
   guint progId;
   guint vertId;
@@ -97,6 +99,15 @@ init_shaders (SimpleViewerContext *ctx)
     abort ();
 
   LinkShader (ctx->progId, ctx->vertId, ctx->fragId);
+
+  glUseProgram(ctx->progId);
+
+}
+
+static void
+render_vrm (SimpleViewerContext * ctx)
+{
+  std::cout << ctx->vrmCtx->vrm.meta;
 }
 
 static gboolean
@@ -106,6 +117,9 @@ render_cb (GtkGLArea *area, GdkGLContext *context, gpointer user_data)
 
   glClearColor (1.0, 0.0, 0.0, 1.0);
   glClear (GL_COLOR_BUFFER_BIT);
+
+  if (ctx->vrmCtx != std::nullopt)
+    render_vrm (ctx);
 
   glFlush ();
 
@@ -136,13 +150,26 @@ activate_cb (GtkApplication * app, gpointer user_data)
       APP_WINDOW_HEIGHT);
 
   gl_area = gtk_gl_area_new ();
-  g_signal_connect (gl_area, "render", G_CALLBACK (render_cb), NULL);
+  g_signal_connect (gl_area, "render", G_CALLBACK (render_cb), ctx);
   g_signal_connect (gl_area, "realize", G_CALLBACK (realize_cb), ctx);
 
   gtk_window_set_child (GTK_WINDOW (window), gl_area);
 
   gtk_widget_show (gl_area);
   gtk_widget_show (window);
+}
+
+static void
+load_model (SimpleViewerContext *ctx)
+{
+  std::optional<vrmx::VRMContext> vrmCtx = std::nullopt;
+
+  try {
+    ctx->vrmCtx = std::optional<vrmx::VRMContext> (
+        vrmx::VRMContext::LoadBinaryFromFile (ctx->filePath));
+  } catch (...) {
+    ctx->vrmCtx = std::nullopt;
+  }
 }
 
 static guint
@@ -161,6 +188,7 @@ command_line_cb (GtkApplication *app, GApplicationCommandLine *cl,
     return 1;
   ctx->filePath = std::string (remaining_args[0]);
 
+  load_model (ctx);
   g_application_activate (G_APPLICATION (app));
   return 0;
 }
