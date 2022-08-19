@@ -114,7 +114,7 @@ init_shaders (SimpleViewerContext *ctx)
 
   LinkShader (ctx->progId, ctx->vertId, ctx->fragId);
 
-  glUseProgram(ctx->progId);
+  // glUseProgram(ctx->progId);
 
 }
 
@@ -358,17 +358,6 @@ static void DrawNode(SimpleViewerContext *ctx, const tinygltf::Node &node) {
   glPopMatrix();
 }
 
-
-
-
-
-
-
-
-
-
-
-
 static void
 DrawModel(SimpleViewerContext *ctx)
 {
@@ -396,6 +385,9 @@ render_vrm (SimpleViewerContext * ctx)
   DrawModel (ctx);
 }
 
+guint VBO;
+guint VAO;
+
 static gboolean
 render_cb (GtkGLArea *area, GdkGLContext *context, gpointer user_data)
 {
@@ -404,17 +396,22 @@ render_cb (GtkGLArea *area, GdkGLContext *context, gpointer user_data)
   glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
   glClear (GL_COLOR_BUFFER_BIT);
 
-  glMatrixMode(GL_PROJECTION);
-  glPushMatrix();
-  gluLookAt (ctx->eye[0], ctx->eye[1], ctx->eye[2],
-      ctx->lookat[0], ctx->lookat[1], ctx->lookat[3],
-      ctx->up[0], ctx->up[1], ctx->up[3]);
+  glUseProgram (ctx->progId);
+  glBindVertexArray (VAO);
+  glDrawArrays (GL_TRIANGLES, 0, 3);
 
-  if (ctx->vrmCtx != std::nullopt)
-    render_vrm (ctx);
+  // glTF code...
+  // glMatrixMode(GL_PROJECTION);
+  // glPushMatrix();
+  // gluLookAt (ctx->eye[0], ctx->eye[1], ctx->eye[2],
+  //     ctx->lookat[0], ctx->lookat[1], ctx->lookat[3],
+  //     ctx->up[0], ctx->up[1], ctx->up[3]);
 
-  glMatrixMode(GL_PROJECTION);
-  glPopMatrix();
+  // if (ctx->vrmCtx != std::nullopt)
+  //   render_vrm (ctx);
+
+  // glMatrixMode(GL_PROJECTION);
+  // glPopMatrix();
 
   glFlush ();
 
@@ -441,6 +438,25 @@ realize_cb (GtkWidget *gl_area, gpointer user_data)
   ctx->up[2] = 0.0f;
 
   init_shaders (ctx);
+
+  // BEGIN STUPID TRIANGLE
+  float vertices[] = {
+    -0.5f, -0.5f, 0.0f, // 1.0f, 0.0f, 0.0f,
+    0.5f, -0.5f, 0.0f, // 1.0f, 0.0f, 0.0f,
+    0.0f, 0.5f, 0.0f, // 1.0f, 0.0f, 0.0f,
+  };
+
+  glGenBuffers (1, &VBO);
+  glBindBuffer (GL_ARRAY_BUFFER, VBO);
+  glBufferData (GL_ARRAY_BUFFER, sizeof (vertices), vertices, GL_STATIC_DRAW);
+
+  glGenVertexArrays (1, &VAO);
+  glBindVertexArray (VAO);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void *) 0);
+
+  glEnableVertexAttribArray (0);
+  glBindBuffer (GL_ARRAY_BUFFER, 0);
+  glBindVertexArray (0);
 }
 
 static void
