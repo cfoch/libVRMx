@@ -12,10 +12,9 @@ namespace vrmx
 {
 class VRMContext
 {
-  std::unique_ptr<tinygltf::Model> model;
-
   public:
     VRM vrm;
+    std::unique_ptr<tinygltf::Model> model;
 
     VRMContext(std::unique_ptr<tinygltf::Model> &model);
     static VRMContext LoadBinaryFromFile (std::string filePath);
