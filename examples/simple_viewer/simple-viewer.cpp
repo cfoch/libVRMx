@@ -5,6 +5,9 @@
 #include <epoxy/gl.h>
 #include <epoxy/glx.h>
 #include <GL/glu.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include "vrmx.h"
 #include "vrmx-io.h"
 
@@ -397,6 +400,20 @@ render_cb (GtkGLArea *area, GdkGLContext *context, gpointer user_data)
   glClear (GL_COLOR_BUFFER_BIT);
 
   glUseProgram (ctx->progId);
+
+  glm::mat4 model = glm::mat4(1.0);
+  model = glm::translate (model, glm::vec3(1.0f, 1.0f, 0.0f));
+  glm::mat4 view = glm::lookAt(
+      glm::vec3(0.0f, 0.0f, 3.0f), 
+      glm::vec3(0.0f, 0.0f, 0.0f), 
+      glm::vec3(0.0f, 1.0f, 0.0f));
+  glm::mat4 projection = glm::ortho (-3.0f, 3.0f, -3.0f, 3.0f, 0.0f, 3.0f);
+  glm::mat4 mvp = projection* view * model;
+
+  GLint mvpLoc = glGetUniformLocation(ctx->progId, "mvp");
+  glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, glm::value_ptr(mvp));
+
+
   glBindVertexArray (VAO);
   glDrawArrays (GL_TRIANGLES, 0, 3);
 

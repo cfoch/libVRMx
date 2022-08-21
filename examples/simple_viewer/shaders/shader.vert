@@ -1,6 +1,9 @@
 #version 460
 
 layout(location = 0) in vec3 in_vertex;
+
+layout(location = 1) uniform mat4 mvp;
+
 // attribute vec3    in_normal;
 // attribute vec2    in_texcoord;
 
@@ -16,5 +19,5 @@ void main(void)
 
 	// texcoord = in_texcoord;
 
-	gl_Position = vec4(in_vertex.x, in_vertex.y, in_vertex.z, 1);
+	gl_Position = mvp * vec4(in_vertex, 1);
 }
