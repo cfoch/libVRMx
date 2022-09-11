@@ -102,21 +102,26 @@ VRMContext::VRMContext(std::unique_ptr<tinygltf::Model> &model)
   this->state.isSetup = false;
 }
 
-VRMContext::AttrShaderInfo VRMContext::attrShaderInfo[] = {
-  {"POSITION", "in_position", false},
+VRMContext::AttrShaderInfo VRMContext::attrShaderInfo[] =
+{
+  { "POSITION", "in_position", false },
 };
 
 bool
 VRMContext::IsValidAttr (const std::string &attr, bool checkState = true)
 {
-  auto cmp = [attr] (auto info) { return info.attr == attr; };
-  auto find_res = std::find_if (std::begin(attrShaderInfo), std::end(attrShaderInfo), cmp);
+  auto cmp = [attr] (auto info)
+      {
+        return info.attr == attr;
+      };
+  auto find_res = std::find_if (std::begin (attrShaderInfo), std::end (
+      attrShaderInfo), cmp);
   bool res = find_res != std::end (attrShaderInfo);
 
   if (res && checkState)
-    return res &&
-        state.shaders.attributes.find (attr) != state.shaders.attributes.end () &&
-        state.shaders.attributes[attr] >= 0;
+    return res && state.shaders.attributes.find (attr) !=
+      state.shaders.attributes.end () && state.shaders.attributes[attr] >=
+      0;
   return res;
 }
 
@@ -293,7 +298,7 @@ VRMContext::DrawMesh (const tinygltf::Mesh &mesh)
 
       int size = GetNumComponentsInType (accessor.type);
 
-      if (!IsValidAttr(attr))
+      if (!IsValidAttr (attr))
         continue;
 
       glBindBuffer (GL_ARRAY_BUFFER, state.buffers.vbos[accessor.bufferView]);
@@ -387,10 +392,10 @@ VRMContext::SetupMesh ()
       continue;
 
     state.shaders.attributes[info.attr] = info.isUniform ?
-      glGetUniformLocation (state.programId, info.var) :
-      glGetAttribLocation (state.programId, info.var);
+        glGetUniformLocation (state.programId, info.var) :
+        glGetAttribLocation (state.programId, info.var);
     assert (state.shaders.attributes[info.attr] >= 0);
-  };
+  }
 
   return true;
 }
