@@ -102,6 +102,24 @@ VRMContext::VRMContext(std::unique_ptr<tinygltf::Model> &model)
   this->state.isSetup = false;
 }
 
+VRMContext::AttrShaderInfo VRMContext::attrShaderInfo[] = {
+  {"POSITION", "in_position", false},
+};
+
+bool
+VRMContext::IsValidAttr (const std::string &attr, bool checkState = true)
+{
+  auto cmp = [attr] (auto info) { return info.attr == attr; };
+  auto find_res = std::find_if (std::begin(attrShaderInfo), std::end(attrShaderInfo), cmp);
+  bool res = find_res != std::end (attrShaderInfo);
+
+  if (res && checkState)
+    return res &&
+        state.shaders.attributes.find (attr) != state.shaders.attributes.end () &&
+        state.shaders.attributes[attr] >= 0;
+  return res;
+}
+
 VRMContext
 VRMContext::LoadBinaryFromFile (std::string filePath)
 {
@@ -275,7 +293,7 @@ VRMContext::DrawMesh (const tinygltf::Mesh &mesh)
 
       int size = GetNumComponentsInType (accessor.type);
 
-      if (attr != "POSITION" || state.shaders.attributes[attr] < 0)
+      if (!IsValidAttr(attr))
         continue;
 
       glBindBuffer (GL_ARRAY_BUFFER, state.buffers.vbos[accessor.bufferView]);
@@ -302,7 +320,7 @@ VRMContext::DrawMesh (const tinygltf::Mesh &mesh)
         BUFFER_OFFSET (indexAccessor.byteOffset));
 
     for (const auto &[attr, accessorIdx]: primitive.attributes) {
-      if (attr != "POSITION" || state.shaders.attributes[attr] < 0)
+      if (!IsValidAttr (attr))
         continue;
       glDisableVertexAttribArray (state.shaders.attributes[attr]);
     }
@@ -364,9 +382,15 @@ VRMContext::SetupMesh ()
   }
 
   glUseProgram (state.programId);
-  GLint vtloc = glGetAttribLocation (state.programId, "in_vertex");
-  assert (vtloc >= 0);
-  state.shaders.attributes["POSITION"] = vtloc;
+  for (const auto &info: attrShaderInfo) {
+    if (!IsValidAttr (info.attr, false))
+      continue;
+
+    state.shaders.attributes[info.attr] = info.isUniform ?
+      glGetUniformLocation (state.programId, info.var) :
+      glGetAttribLocation (state.programId, info.var);
+    assert (state.shaders.attributes[info.attr] >= 0);
+  };
 
   return true;
 }

@@ -47,8 +47,15 @@ class VRMContext
       struct ShadersState shaders;
       bool isSetup;
     };
+    struct AttrShaderInfo
+    {
+      std::string attr;
+      const GLchar *var;
+      bool isUniform;
+    };
 
     struct State state;
+    static struct AttrShaderInfo attrShaderInfo[];
 
     bool InitShaders ();
     GLuint LoadShader (const std::string &src, const GLenum type);
@@ -56,6 +63,7 @@ class VRMContext
     bool SetupMesh (void);
     void DrawNode (const tinygltf::Node &node);
     void DrawMesh (const tinygltf::Mesh &mesh);
+    bool IsValidAttr (const std::string &attr, bool checkState);
 
 };
 }
