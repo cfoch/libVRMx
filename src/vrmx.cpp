@@ -102,21 +102,33 @@ VRMContext::VRMContext(std::unique_ptr<tinygltf::Model> &model)
   this->state.isSetup = false;
 }
 
-VRMContext::AttrShaderInfo VRMContext::attrShaderInfo[] =
+VRMContext::AttrShaderInfo VRMContext::attrShaderInfoPrimitives[] =
 {
   { "POSITION", "in_position", false },
+  { "", "", false },
+};
+
+VRMContext::AttrShaderInfo VRMContext::attrShaderInfoPBR[] =
+{
+  { "baseColorFactor", "u_baseColorFactor", true},
+  // { "metallicFactor", "in_metallicFactor", false },
+  // { "roughnessFactor", "in_roughnessFactor", false },
+  // { "", "", false },
 };
 
 bool
-VRMContext::IsValidAttr (const std::string &attr, bool checkState = true)
+VRMContext::IsValidAttr (VRMContext::AttrShaderInfo (&info)[],
+    const std::string &attr, bool checkState = true)
 {
-  auto cmp = [attr] (auto info)
-      {
-        return info.attr == attr;
-      };
-  auto find_res = std::find_if (std::begin (attrShaderInfo), std::end (
-      attrShaderInfo), cmp);
-  bool res = find_res != std::end (attrShaderInfo);
+  int i;
+  bool res = false;
+
+  for (i = 0; !info[i].attr.empty(); i++) {
+    if (info[i].attr == attr) {
+      res = true;
+      break;
+    }
+  }
 
   if (res && checkState)
     return res && state.shaders.attributes.find (attr) !=
@@ -298,7 +310,7 @@ VRMContext::DrawMesh (const tinygltf::Mesh &mesh)
 
       int size = GetNumComponentsInType (accessor.type);
 
-      if (!IsValidAttr (attr))
+      if (!IsValidAttr (attrShaderInfoPrimitives, attr))
         continue;
 
       glBindBuffer (GL_ARRAY_BUFFER, state.buffers.vbos[accessor.bufferView]);
@@ -315,6 +327,26 @@ VRMContext::DrawMesh (const tinygltf::Mesh &mesh)
           byteStride, BUFFER_OFFSET (accessor.byteOffset));
     }
 
+    if (primitive.material >= 0) {
+      auto material = model->materials[primitive.material];
+      for (const auto &[attr, location] : state.shaders.attributes) {
+        for (const auto &info: attrShaderInfoPBR) {
+          if (!IsValidAttr (attrShaderInfoPBR, info.attr, false))
+            continue;
+          if (info.attr != attr)
+            continue;
+
+          if (attr == "baseColorFactor") {
+            std::vector<GLfloat> baseColorFactor(
+                material.pbrMetallicRoughness.baseColorFactor.begin (),
+                material.pbrMetallicRoughness.baseColorFactor.end ());
+            glUniform4fv (location, 1, &baseColorFactor[0]);
+          }
+
+        }
+      }
+    }
+
     const tinygltf::Accessor &indexAccessor =
         model->accessors[primitive.indices];
     glBindBuffer (GL_ELEMENT_ARRAY_BUFFER,
@@ -325,7 +357,7 @@ VRMContext::DrawMesh (const tinygltf::Mesh &mesh)
         BUFFER_OFFSET (indexAccessor.byteOffset));
 
     for (const auto &[attr, accessorIdx]: primitive.attributes) {
-      if (!IsValidAttr (attr))
+      if (!IsValidAttr (attrShaderInfoPrimitives, attr))
         continue;
       glDisableVertexAttribArray (state.shaders.attributes[attr]);
     }
@@ -387,8 +419,8 @@ VRMContext::SetupMesh ()
   }
 
   glUseProgram (state.programId);
-  for (const auto &info: attrShaderInfo) {
-    if (!IsValidAttr (info.attr, false))
+  for (const auto &info: attrShaderInfoPrimitives) {
+    if (!IsValidAttr (attrShaderInfoPrimitives, info.attr, false))
       continue;
 
     state.shaders.attributes[info.attr] = info.isUniform ?
@@ -396,6 +428,18 @@ VRMContext::SetupMesh ()
         glGetAttribLocation (state.programId, info.var);
     assert (state.shaders.attributes[info.attr] >= 0);
   }
+
+  for (const auto &info: attrShaderInfoPBR) {
+    if (!IsValidAttr (attrShaderInfoPBR, info.attr, false))
+      continue;
+
+    state.shaders.attributes[info.attr] = info.isUniform ?
+        glGetUniformLocation (state.programId, info.var) :
+        glGetAttribLocation (state.programId, info.var);
+    assert (state.shaders.attributes[info.attr] >= 0);
+  }
+
+
 
   return true;
 }
