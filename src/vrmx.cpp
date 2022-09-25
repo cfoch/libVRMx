@@ -105,15 +105,16 @@ VRMContext::VRMContext(std::unique_ptr<tinygltf::Model> &model)
 VRMContext::AttrShaderInfo VRMContext::attrShaderInfoPrimitives[] =
 {
   { "POSITION", "in_position", false },
+  { "NORMAL", "in_normal", false },
   { "", "", false },
 };
 
 VRMContext::AttrShaderInfo VRMContext::attrShaderInfoPBR[] =
 {
   { "baseColorFactor", "u_baseColorFactor", true},
-  // { "metallicFactor", "in_metallicFactor", false },
-  // { "roughnessFactor", "in_roughnessFactor", false },
-  // { "", "", false },
+  { "metallicFactor", "u_metallicFactor", true },
+  { "roughnessFactor", "u_roughnessFactor", true },
+  { "", "", false },
 };
 
 bool
@@ -296,6 +297,28 @@ TinygltfModeToGLEnum (int mode)
 }
 
 void
+VRMContext::DrawMaterial (const tinygltf::Material &material)
+{
+  for (const auto &[attr, location] : state.shaders.attributes) {
+    for (const auto &info: attrShaderInfoPBR) {
+      if (!IsValidAttr (attrShaderInfoPBR, info.attr, false) ||
+          info.attr != attr)
+
+      if (attr == "baseColorFactor") {
+        std::vector<GLfloat> baseColorFactor(
+            material.pbrMetallicRoughness.baseColorFactor.begin (),
+            material.pbrMetallicRoughness.baseColorFactor.end ());
+        glUniform4fv (location, 1, &baseColorFactor[0]);
+      } else if (attr == "metallicFactor") {
+        glUniform1f (location, material.pbrMetallicRoughness.metallicFactor);
+      } else if (attr == "roughnessFactor") {
+        glUniform1f (location, material.pbrMetallicRoughness.roughnessFactor);
+      }
+    }
+  }
+}
+
+void
 VRMContext::DrawMesh (const tinygltf::Mesh &mesh)
 {
   for (size_t i = 0; i < mesh.primitives.size (); i++) {
@@ -327,25 +350,8 @@ VRMContext::DrawMesh (const tinygltf::Mesh &mesh)
           byteStride, BUFFER_OFFSET (accessor.byteOffset));
     }
 
-    if (primitive.material >= 0) {
-      auto material = model->materials[primitive.material];
-      for (const auto &[attr, location] : state.shaders.attributes) {
-        for (const auto &info: attrShaderInfoPBR) {
-          if (!IsValidAttr (attrShaderInfoPBR, info.attr, false))
-            continue;
-          if (info.attr != attr)
-            continue;
-
-          if (attr == "baseColorFactor") {
-            std::vector<GLfloat> baseColorFactor(
-                material.pbrMetallicRoughness.baseColorFactor.begin (),
-                material.pbrMetallicRoughness.baseColorFactor.end ());
-            glUniform4fv (location, 1, &baseColorFactor[0]);
-          }
-
-        }
-      }
-    }
+    if (primitive.material >= 0)
+      DrawMaterial (model->materials[primitive.material]);
 
     const tinygltf::Accessor &indexAccessor =
         model->accessors[primitive.indices];

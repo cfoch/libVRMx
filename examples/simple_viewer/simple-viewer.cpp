@@ -23,7 +23,7 @@ render_cb (GtkGLArea *area, GdkGLContext *context, gpointer user_data)
 {
   SimpleViewerContext *ctx = (SimpleViewerContext *) user_data;
 
-  glClearColor (0.1f, 0.2f, 0.3f, 1.0f);
+  glClearColor (0.83f, 0.83f, 0.83f, 1.0f);
   glClear (GL_COLOR_BUFFER_BIT);
 
   glm::mat4 model = glm::mat4 (1.0);
