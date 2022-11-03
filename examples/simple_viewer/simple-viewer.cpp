@@ -33,10 +33,15 @@ render_cb (GtkGLArea *area, GdkGLContext *context, gpointer user_data)
       glm::vec3 (0.0f, 0.0f, 0.0f),
       glm::vec3 (0.0f, 1.0f, 0.0f));
   glm::mat4 projection = glm::ortho (-3.0f, 3.0f, -3.0f, 3.0f, 0.0f, 4.0f);
-  glm::mat4 mvp = projection * view * model;
+  // glm::mat4 mvp = projection * view * model;
 
-  GLint mvpLoc = glGetUniformLocation (ctx->progId, "mvp");
-  glUniformMatrix4fv (mvpLoc, 1, GL_FALSE, glm::value_ptr (mvp));
+  GLint modelLoc = glGetUniformLocation (ctx->progId, "model");
+  GLint viewLoc = glGetUniformLocation (ctx->progId, "view");
+  GLint projLoc = glGetUniformLocation (ctx->progId, "projection");
+
+  glUniformMatrix4fv (modelLoc, 1, GL_FALSE, glm::value_ptr (model));
+  glUniformMatrix4fv (viewLoc, 1, GL_FALSE, glm::value_ptr (view));
+  glUniformMatrix4fv (projLoc, 1, GL_FALSE, glm::value_ptr (projection));
 
   if (ctx->vrmCtx != std::nullopt && ctx->vrmCtx->IsSetup ())
     ctx->vrmCtx->Draw ();

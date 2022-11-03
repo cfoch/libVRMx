@@ -1,15 +1,20 @@
 #version 460
 
-layout(location = 0) uniform mat4 mvp;
-layout(location = 1) in vec3 in_position;
-layout(location = 2) in vec3 in_normal;
+layout(location = 0) uniform mat4 model;
+layout(location = 1) uniform mat4 view;
+layout(location = 2) uniform mat4 projection;
+
+layout(location = 3) in vec3 in_position;
+layout(location = 4) in vec3 in_normal;
 
 out vec3 normal;
-out vec3 position;
+out vec3 worldPosition;
+
 
 void main(void)
 {
-	gl_Position = mvp * vec4(in_position, 1);
-	position = in_position;
-	normal = in_normal;
+	normal = mat3(model) * in_normal;
+	worldPosition = vec3(model * vec4(in_position, 1.0));
+
+	gl_Position = projection * view * vec4(worldPosition, 1.0);
 }
