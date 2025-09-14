@@ -2,7 +2,7 @@
 #define __VRMX_TYPES_H__
 
 #include <vector>
-#include "magic_enum.hpp"
+#include "magic_enum/magic_enum.hpp"
 
 namespace tinygltf
 {
