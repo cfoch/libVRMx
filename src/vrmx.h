@@ -11,30 +11,12 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "tiny_gltf.h"
 #include "vrmx-types.h"
+#include "vrmx-settings.h"
 #include "spdlog/spdlog.h"
 #include "spdlog/cfg/env.h"
 
-
-#define MAX_LIGHTS  16
-
 namespace vrmx
 {
-struct VRMSettings {
-  struct {
-    glm::vec3 positions[MAX_LIGHTS];
-    glm::vec3 colors[MAX_LIGHTS];
-    size_t count;
-  } lighting;
-  struct {
-    glm::vec3 position;
-    glm::vec3 front;
-    glm::vec3 up;
-  } camera;
-  glm::mat4 model;
-  glm::mat4 projection;
-  bool ignoreNormals;
-};
-
 class VRMContext
 {
   public:

@@ -1,6 +1,7 @@
 sources = [
   'vrmx.cpp',
-  'vrmx-io.cpp'
+  'vrmx-camera-controller.cpp',
+  'vrmx-io.cpp',
 ]
 
 config_data = configuration_data()

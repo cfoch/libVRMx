@@ -6,6 +6,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "vrmx.h"
+#include "vrmx-camera-controller.h"
 
 #define APP_NAME                  "simple-viewer"
 #define APP_WINDOW_WIDTH          600
@@ -16,9 +17,18 @@ typedef struct
 {
   std::optional<vrmx::VRMContext> vrmCtx;
   vrmx::VRMSettings settings;
+  std::unique_ptr<vrmx::VRMCameraController> camera_controller;
+  glm::vec3 world_up;
   std::string filePath;
   guint progId;
   gboolean ignore_normals;
+  gdouble last_x;
+  gdouble last_y;
+  gboolean first_mouse;
+  gfloat camera_radius;
+  gfloat phi;
+  gfloat theta;
+  gfloat mouse_sensitivity;
 } SimpleViewerContext;
 
 static gboolean
@@ -51,10 +61,32 @@ realize_cb (GtkWidget *gl_area, gpointer user_data)
   }
 }
 
+static gboolean
+motion_cb (GtkEventControllerMotion *controller, gdouble x, gdouble y,
+    gpointer user_data)
+{
+  SimpleViewerContext *ctx = (SimpleViewerContext *) user_data;
+
+  ctx->camera_controller->ProcessMouseMotion (x, y);
+  ctx->vrmCtx->SetSettings (ctx->settings);
+
+  return GDK_EVENT_STOP;
+}
+
+gboolean
+timeout_cb (gpointer user_data) {
+  if (!GTK_IS_GL_AREA (user_data))
+    return G_SOURCE_CONTINUE;
+  
+  gtk_widget_queue_draw(GTK_WIDGET (user_data));
+  return G_SOURCE_CONTINUE;
+}
+
 static void
 activate_cb (GtkApplication *app, gpointer user_data)
 {
   GtkWidget *window, *gl_area;
+  GtkEventController *motion_controller;
   SimpleViewerContext *ctx = (SimpleViewerContext *) user_data;
 
   window = gtk_application_window_new (app);
@@ -63,6 +95,10 @@ activate_cb (GtkApplication *app, gpointer user_data)
       APP_WINDOW_HEIGHT);
 
   gl_area = gtk_gl_area_new ();
+  motion_controller = gtk_event_controller_motion_new ();
+  gtk_widget_add_controller (GTK_WIDGET (gl_area), motion_controller);
+  g_signal_connect (motion_controller, "motion", G_CALLBACK (motion_cb),
+      ctx);
 
   gtk_gl_area_set_required_version(GTK_GL_AREA(gl_area), 4, 6);
   gtk_gl_area_set_has_depth_buffer(GTK_GL_AREA(gl_area), TRUE);
@@ -70,6 +106,8 @@ activate_cb (GtkApplication *app, gpointer user_data)
 
   g_signal_connect (gl_area, "render", G_CALLBACK (render_cb), ctx);
   g_signal_connect (gl_area, "realize", G_CALLBACK (realize_cb), ctx);
+  g_timeout_add(16, timeout_cb, gl_area); // ~60 FPS
+
 
   gtk_window_set_child (GTK_WINDOW (window), gl_area);
 
@@ -130,6 +168,14 @@ main (int argc, char **argv)
   int st;
   SimpleViewerContext ctx = {};
 
+  // Motion
+  ctx.camera_radius = 5.0f;
+  ctx.phi = 0.0f;
+  ctx.theta = 0.0f;
+  ctx.mouse_sensitivity = 0.01f;
+  ctx.first_mouse = TRUE;
+  ctx.camera_controller = std::make_unique<vrmx::VRMCameraController>(ctx.settings.camera);
+
   // Set default viewer settings.
   ctx.settings.lighting.positions[0] = glm::vec3(-3.0, 3.0, 3.0);
   ctx.settings.lighting.positions[1] = glm::vec3( 3.0, 3.0, 3.0);
@@ -140,9 +186,9 @@ main (int argc, char **argv)
   ctx.settings.lighting.colors[2] = glm::vec3(30, 30, 30);
   ctx.settings.lighting.colors[3] = glm::vec3(30, 30, 30);
   ctx.settings.lighting.count = 4;
-  ctx.settings.camera.position = glm::vec3(0.0f, -3.0f, 3.0f);
-  ctx.settings.camera.front = glm::vec3(0.0f, 3.0f, -3.0f);
-  ctx.settings.camera.up = glm::vec3(0.0f, 1.0f, 0.0f);
+  ctx.settings.camera.position = glm::vec3(0.0f, 5.0f, 0.0f);
+  ctx.settings.camera.front = glm::vec3(0.0f, -1.0f, 0.0f);
+  ctx.settings.camera.up = glm::vec3(0.0f, 0.0f, 1.0f);
   ctx.settings.model = glm::mat4 (1.0);
   ctx.settings.projection = glm::perspective(glm::radians(45.0f),
       APP_WINDOW_ASPECT_RATIO, 0.1f, 100.0f);
