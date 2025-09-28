@@ -1,4 +1,5 @@
 #version 460
+#pragma optimize (off)
 
 uniform mat4 u_model;
 uniform mat4 u_view;
@@ -7,9 +8,11 @@ uniform bool u_ignoreNormals;
 
 in vec3 in_position;
 in vec3 in_normal;
+in vec2 in_texCoord;
 
 out vec3 normal;
 out vec3 worldPosition;
+out vec2 texCoord;
 
 void main(void)
 {
@@ -20,5 +23,6 @@ void main(void)
 		normal = vec3(0, 0, 0);
 	}
 
+	texCoord = vec2(in_texCoord.x, in_texCoord.y);
 	gl_Position = u_projection * u_view * vec4(worldPosition, 1.0);
 }

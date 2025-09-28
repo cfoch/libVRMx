@@ -74,7 +74,8 @@ class VRMContext
     bool SetupMesh (void);
     void DrawNode (const tinygltf::Node &node);
     void DrawMesh (const tinygltf::Mesh &mesh);
-    void DrawMaterial (const tinygltf::Material &material);
+    void DrawMaterial (const tinygltf::Primitive &primitive, const tinygltf::Material &material);
+    void DrawTexture (const tinygltf::Primitive &primitive, const tinygltf::TextureInfo &texture);
     void DrawSettings (void);
     bool IsValidAttr (VRMContext::AttrShaderInfo (&info)[],
         const std::string &attr, bool checkState);

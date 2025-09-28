@@ -1,4 +1,5 @@
 #version 460
+#pragma optimize (off)
 
 const float ao = 1.0;
 const float PI = 3.14159265359;
@@ -6,6 +7,7 @@ const float PI = 3.14159265359;
 out vec4 FragColor;
 in vec3 normal;
 in vec3 worldPosition;
+in vec2 texCoord;
 
 uniform bool u_ignoreNormals;
 uniform vec3 u_cameraPosition;
@@ -13,6 +15,7 @@ uniform vec3 u_lightColors[4];
 uniform vec3 u_lightPositions[4];
 uniform uint u_lightCount;
 
+uniform sampler2D u_baseColorTexture;
 uniform vec4 u_baseColorFactor;
 uniform float u_metallicFactor;
 uniform float u_roughnessFactor;
@@ -70,7 +73,8 @@ void main(void)
 
     vec3 V = normalize(u_cameraPosition - worldPosition);
 
-    vec3 albedo = vec3(u_baseColorFactor.x, u_baseColorFactor.y, u_baseColorFactor.z);
+    vec4 baseColor = texture(u_baseColorTexture, texCoord);
+    vec3 albedo = baseColor.rgb * u_baseColorFactor.rgb;
     // vec3 albedo = vec3(0.5f, 0.0f, 0.0f);
     float metallic = u_metallicFactor;
 

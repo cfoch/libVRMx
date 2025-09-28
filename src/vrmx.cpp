@@ -105,6 +105,7 @@ VRMContext::VRMContext(std::unique_ptr<tinygltf::Model> &model)
 VRMContext::AttrShaderInfo VRMContext::attrShaderInfoPrimitives[] =
 {
   { "POSITION", "in_position", false },
+  { "TEXCOORD_0", "in_texCoord", false }, // FIXME: Support TEXCOORD_1, TEXCOORD_2, ..., TEXCOORD_N
   { "NORMAL", "in_normal", false },
   { "", "", false },
 };
@@ -127,6 +128,7 @@ VRMContext::AttrShaderInfo VRMContext::attrShaderInfoPBR[] =
   { "baseColorFactor", "u_baseColorFactor", true},
   { "metallicFactor", "u_metallicFactor", true },
   { "roughnessFactor", "u_roughnessFactor", true },
+  { "baseColorTexture", "u_baseColorTexture", true },
   { "", "", false },
 };
 
@@ -345,19 +347,58 @@ VRMContext::DrawSettings ()
 }
 
 void
-VRMContext::DrawMaterial (const tinygltf::Material &material)
+VRMContext::DrawTexture (const tinygltf::Primitive &primitive, const tinygltf::TextureInfo &textureInfo)
 {
+  unsigned int texId, texLoc;
+  tinygltf::Texture &texture = model->textures[textureInfo.index];
+  tinygltf::Sampler &sampler = model->samplers[texture.sampler];
+  tinygltf::Image &image = model->images[texture.source];
+  tinygltf::BufferView &bufferView = model->bufferViews[image.bufferView];
+
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, 1);
+
+  // char name[32];
+  // sprintf(name, "TEXCOORD_%d", textureInfo.texCoord);
+
+  // glGenTextures(1, &texId);
+  // glActiveTexture(GL_TEXTURE0);
+  // glBindTexture(GL_TEXTURE_2D, texId);
+
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, sampler.wrapS);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, sampler.wrapT);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, sampler.minFilter);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, sampler.magFilter);
+
+  // // FIXME: This bufferView data has been already used in SetupMesh().
+  // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0,
+  //     GL_RGBA, image.pixel_type, &image.image[0]);
+  // glGenerateMipmap(GL_TEXTURE_2D);
+
+  // It seems not needed.
+  // See https://learnopengl.com/code_viewer_gh.php?code=src/1.getting_started/4.1.textures/textures.cpp
+  texLoc = glGetUniformLocation (state.programId, "u_baseColorTexture");
+  assert (texLoc != -1);
+  glUniform1i(texLoc, 0);
+
+}
+
+void
+VRMContext::DrawMaterial (const tinygltf::Primitive &primitive, const tinygltf::Material &material)
+{
+  // TODO: Iteration here needed? Maybe just call glGetUniformLocation here?
   for (const auto &[attr, location] : state.shaders.attributes) {
     for (const auto &info: attrShaderInfoPBR) {
       if (!IsValidAttr (attrShaderInfoPBR, info.attr, false) ||
           info.attr != attr)
         continue;
-
       if (attr == "baseColorFactor") {
         std::vector<GLfloat> baseColorFactor(
             material.pbrMetallicRoughness.baseColorFactor.begin (),
             material.pbrMetallicRoughness.baseColorFactor.end ());
         glUniform4fv (location, 1, &baseColorFactor[0]);
+      } else if (attr == "baseColorTexture") {
+        DrawTexture (primitive, material.pbrMetallicRoughness.baseColorTexture);
       } else if (attr == "metallicFactor") {
         glUniform1f (location, material.pbrMetallicRoughness.metallicFactor);
       } else if (attr == "roughnessFactor") {
@@ -376,31 +417,35 @@ VRMContext::DrawMesh (const tinygltf::Mesh &mesh)
     if (primitive.indices < 0)
       return;
 
+    // Accoring ChatGPT, I should use one VAO per-primitive. I tested it here, and worked.
+    glBindVertexArray (1);
+
     for (const auto &[attr, accessorIdx]: primitive.attributes) {
       assert (accessorIdx >= 0);
       const tinygltf::Accessor &accessor = model->accessors[accessorIdx];
 
       int size = GetNumComponentsInType (accessor.type);
 
+      // TODO: Support TEXTCOORD_0, TEXTCOORD_1, ..., TEXTCOORD_N
       if (!IsValidAttr (attrShaderInfoPrimitives, attr))
         continue;
 
       glBindBuffer (GL_ARRAY_BUFFER, state.buffers.vbos[accessor.bufferView]);
-      glBindVertexArray (state.buffers.vaos[accessor.bufferView]);
 
       // Compute byteStride from Accessor + BufferView combination.
       int byteStride = accessor.ByteStride (
           model->bufferViews[accessor.bufferView]);
       assert (byteStride != -1);
-      glEnableVertexAttribArray (state.shaders.attributes[attr]);
 
+      glEnableVertexAttribArray (state.shaders.attributes[attr]);
       glVertexAttribPointer (state.shaders.attributes[attr], size,
           accessor.componentType, accessor.normalized ? GL_TRUE : GL_FALSE,
           byteStride, BUFFER_OFFSET (accessor.byteOffset));
     }
-
+  
+    glUseProgram(state.programId);
     if (primitive.material >= 0)
-      DrawMaterial (model->materials[primitive.material]);
+      DrawMaterial (primitive, model->materials[primitive.material]);
 
     const tinygltf::Accessor &indexAccessor =
         model->accessors[primitive.indices];
@@ -412,6 +457,7 @@ VRMContext::DrawMesh (const tinygltf::Mesh &mesh)
         BUFFER_OFFSET (indexAccessor.byteOffset));
 
     for (const auto &[attr, accessorIdx]: primitive.attributes) {
+      // TODO: Support TEXTCOORD_0, TEXTCOORD_1, ..., TEXTCOORD_N
       if (!IsValidAttr (attrShaderInfoPrimitives, attr))
         continue;
       glDisableVertexAttribArray (state.shaders.attributes[attr]);
@@ -476,7 +522,10 @@ VRMContext::SetupMesh ()
 
     glBindBuffer (bufferView.target, 0);
     state.buffers.vbos[i] = vbo;
+    // Accoring ChatGPT, I should use one VAO per-primitive.
     state.buffers.vaos[i] = vao;
+
+    std::cout << i << ". vao: " << vao << std::endl;
   }
 
   glUseProgram (state.programId);
@@ -488,6 +537,12 @@ VRMContext::SetupMesh ()
     state.shaders.attributes[info.attr] = info.isUniform ?
         glGetUniformLocation (state.programId, info.var) :
         glGetAttribLocation (state.programId, info.var);
+
+      std::cout << "isUniform: " << info.isUniform << std::endl;
+      std::cout << "val: " << info.var << std::endl;
+      std::cout << "location: " << state.shaders.attributes[info.attr]  << std::endl;
+      std::cout << "-------------" << std::endl;
+
     assert (state.shaders.attributes[info.attr] >= 0);
   }
 
@@ -510,6 +565,33 @@ VRMContext::SetupMesh ()
         glGetAttribLocation (state.programId, info.var);
     assert (state.shaders.attributes[info.attr] >= 0);
   }
+
+  for (auto &texture : model->textures) {
+    unsigned int texId, texLoc;
+    tinygltf::Sampler &sampler = model->samplers[texture.sampler];
+    tinygltf::Image &image = model->images[texture.source];
+    tinygltf::BufferView &bufferView = model->bufferViews[image.bufferView];
+
+    std::cout << "process texture " << std::endl;
+    glGenTextures(1, &texId);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texId);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, sampler.wrapS);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, sampler.wrapT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, sampler.minFilter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, sampler.magFilter);
+
+    // FIXME: This bufferView data has been already used in SetupMesh().
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0,
+        GL_RGBA, image.pixel_type, &image.image[0]);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    
+
+    std::cout << "textId: " << texId << std::endl;
+  }
+
+
 
   return true;
 }
